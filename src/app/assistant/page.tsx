@@ -1,242 +1,161 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
+import AIResponseCard from "../../components/AIResponseCard";
 
-type Product = {
-  name: string;
-  price: number;
-  image?: string;
-};
-
-export default function AssistantPage() {
-  const [query, setQuery] = useState("");
-  const [price, setPrice] = useState("");
-  const [results, setResults] = useState<Product[]>([]);
-  const [goals, setGoals] = useState<Product[]>([]);
-  const [selectedGoal, setSelectedGoal] = useState<Product | null>(null);
+export default function LearnPage() {
+  const [question, setQuestion] = useState("");
+  const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // 🔥 LOAD DATA
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  // 🔥 AUTO SCROLL
   useEffect(() => {
-    const storedGoals = sessionStorage.getItem("goals");
-    const storedSelected = sessionStorage.getItem("selectedGoal");
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
 
-    if (storedGoals) setGoals(JSON.parse(storedGoals));
-    if (storedSelected) setSelectedGoal(JSON.parse(storedSelected));
-  }, []);
+  const askAI = async () => {
+    if (!question.trim() || loading) return;
 
-  // 🔍 SEARCH
-  const handleSearch = async () => {
-    if (!query) return;
+    const userMessage = { role: "user", text: question };
 
+    setMessages((prev) => [...prev, userMessage]);
+    setQuestion("");
     setLoading(true);
 
     try {
       const res = await fetch(
-        `http://localhost:8000/search-products?q=${query}`
+        process.env.NEXT_PUBLIC_API_URL + "/ask-ai",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            question,
+            user_type: "student",
+          }),
+        }
       );
+
+      if (!res.ok) throw new Error("API failed");
+
       const data = await res.json();
 
-      const formatted = data.products
-        .filter((p: any) => p.price) // ✅ remove invalid ones
-        .map((p: any) => ({
-          name: p.title,
-          price: p.price,
-          image: p.thumbnail,
-        }));
+      const aiMessage = {
+        role: "ai",
+        data: data.data,
+      };
 
-      setResults(formatted);
+      setMessages((prev) => [...prev, aiMessage]);
     } catch (err) {
       console.error(err);
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "ai",
+          data: {
+            insights: "⚠️ Something went wrong.",
+            tips: ["Try again in a moment"],
+            strategy: "Check your backend connection.",
+            monthly_savings: "—",
+          },
+        },
+      ]);
     }
 
     setLoading(false);
   };
 
-  // ➕ ADD / SELECT (FIXED STATE)
-  const selectGoal = (product: Product) => {
-    setGoals((prev) => {
-      const updated = [...prev, product];
-
-      sessionStorage.setItem("goals", JSON.stringify(updated));
-      sessionStorage.setItem("selectedGoal", JSON.stringify(product));
-
-      return updated;
-    });
-
-    setSelectedGoal(product);
-  };
-
-  // ➕ MANUAL ADD
-  const addCustom = () => {
-    if (!query || !price) return;
-
-    const custom: Product = {
-      name: query,
-      price: parseFloat(price),
-    };
-
-    selectGoal(custom);
-
-    setQuery("");
-    setPrice("");
-  };
-
-  // ❌ REMOVE
-  const removeGoal = (index: number) => {
-    setGoals((prev) => {
-      const updated = prev.filter((_, i) => i !== index);
-
-      sessionStorage.setItem("goals", JSON.stringify(updated));
-
-      return updated;
-    });
-
-    // reset selected if removed
-    if (selectedGoal && goals[index]?.name === selectedGoal.name) {
-      setSelectedGoal(null);
-      sessionStorage.removeItem("selectedGoal");
+  // 🔥 ENTER KEY SUPPORT
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      askAI();
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#f7f5f0] to-[#dfe9e3] px-6 py-8">
+    <div className="min-h-screen bg-gradient-to-b from-[#f0fdf4] to-[#ecfeff] flex flex-col items-center px-6">
 
       {/* NAVBAR */}
-      <div className="w-full max-w-5xl mx-auto mb-6 flex justify-between items-center bg-white/70 backdrop-blur-xl border rounded-2xl px-6 py-3">
-        <div className="font-semibold text-black text-lg">
-          💰 Personal CFO
-        </div>
+      <div className="w-full max-w-5xl mt-6 mb-4 flex justify-between items-center bg-white/70 backdrop-blur-xl border rounded-2xl px-6 py-3 shadow">
+        <span className="text-emerald-900 font-semibold text-lg">
+          🎓 Learn with AI
+        </span>
 
-       <div className="flex items-center gap-8 text-gray-700 font-medium">
-          {[
-            { label: "Dashboard", path: "/dashboard/professional" },
-            { label: "Learn", path: "/learn" },
-            { label: "AI Assistant", path: "/assistant" },
-          ].map((item) => (
-            <button
-              key={item.label}
-              onClick={() => (window.location.href = item.path)}
-              className="relative group transition duration-200 hover:text-emerald-700 hover:scale-105"
-            >
-              {item.label}
-              <span className="absolute left-0 -bottom-1 w-0 h-[2px] bg-emerald-600 transition-all duration-300 group-hover:w-full"></span>
-            </button>
-          ))}
-        </div>
+        <button
+          onClick={() => (window.location.href = "/dashboard")}
+          className="text-sm text-gray-600 hover:text-emerald-700"
+        >
+          ← Back to Dashboard
+        </button>
       </div>
 
-      <div className="w-full max-w-5xl mx-auto">
+      {/* CHAT WINDOW */}
+      <div className="w-full max-w-5xl bg-white/80 backdrop-blur-xl border border-white/40 rounded-[24px] shadow p-6 flex flex-col h-[70vh]">
 
-        {/* MAIN CARD */}
-        <div className="border rounded-[36px] p-6 bg-white/60 backdrop-blur-xl shadow">
+        {/* MESSAGES */}
+        <div className="flex-1 overflow-y-auto space-y-4 pr-2">
 
-          <h1 className="text-2xl font-serif text-black text-center">
-            🎯 Set Your Goals
-          </h1>
-
-          {/* INPUTS */}
-          <div className="flex gap-3 mt-6">
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Item (e.g. iPhone)"
-              className="flex-1 p-3 rounded-xl border text-black"
-            />
-
-            <input
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              placeholder="Price"
-              type="number"
-              className="w-32 p-3 rounded-xl border text-black"
-            />
-
-            <button
-              onClick={handleSearch}
-              className="bg-green-700 text-white px-4 rounded-xl"
-            >
-              Search
-            </button>
-
-            <button
-              onClick={addCustom}
-              className="bg-black text-white px-4 rounded-xl"
-            >
-              Add
-            </button>
-          </div>
-
-          {loading && <p className="mt-4 text-gray-600">Searching...</p>}
-
-          {/* RESULTS */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-6">
-            {results.map((item, i) => (
+          {messages.map((msg, index) =>
+            msg.role === "user" ? (
               <motion.div
-                key={i}
-                whileHover={{ scale: 1.05 }}
-                className="bg-white rounded-2xl p-4 shadow"
+                key={index}
+                initial={{ opacity: 0, x: 40 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="flex justify-end"
               >
-                {item.image && (
-                  <img
-                    src={item.image}
-                    className="w-full h-28 object-contain mb-2"
-                  />
-                )}
-
-                <p className="text-sm text-black">{item.name}</p>
-                <p className="text-green-700 font-bold">
-                  ${item.price}
-                </p>
-
-                <button
-                  onClick={() => selectGoal(item)}
-                  className="mt-2 w-full bg-green-700 text-white py-1 rounded"
-                >
-                  Add
-                </button>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* GOALS */}
-          {goals.length > 0 && (
-            <div className="mt-8 grid grid-cols-2 md:grid-cols-3 gap-4">
-              {goals.map((g, i) => (
-                <div
-                  key={i}
-                  className="bg-white p-4 rounded-xl shadow relative"
-                >
-                  <button
-                    onClick={() => removeGoal(i)}
-                    className="absolute top-2 right-2 text-red-500"
-                  >
-                    ✕
-                  </button>
-
-                  <p className="text-black">{g.name}</p>
-                  <p className="text-green-700 font-bold">
-                    ${g.price}
-                  </p>
+                <div className="bg-emerald-600 text-white px-4 py-2 rounded-2xl max-w-md shadow">
+                  {msg.text}
                 </div>
-              ))}
+              </motion.div>
+            ) : (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, x: -40 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="flex justify-start"
+              >
+                <div className="max-w-xl w-full">
+                  <AIResponseCard data={msg.data} />
+                </div>
+              </motion.div>
+            )
+          )}
+
+          {loading && (
+            <div className="text-gray-500 animate-pulse">
+              🤖 Thinking...
             </div>
           )}
 
-          {/* AI */}
-          <div className="mt-8 bg-white rounded-2xl p-5 shadow">
-            <h2 className="text-black font-semibold mb-2">
-              🤖 AI Financial Assistant
-            </h2>
+          <div ref={messagesEndRef} />
+        </div>
 
-            <p className="text-sm text-gray-700">
-              {goals.length > 0
-                ? `You have ${goals.length} goals. Optimize spending to reach them faster.`
-                : "Add goals to get insights."}
-            </p>
-          </div>
+        {/* INPUT */}
+        <div className="mt-4 flex gap-3">
+          <input
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask anything about saving, investing, spending..."
+            className="flex-1 border border-gray-300 rounded-xl px-4 py-3 outline-none text-black"
+          />
 
+          <button
+            onClick={askAI}
+            disabled={loading}
+            className={`px-6 py-3 rounded-xl text-white transition ${
+              loading
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-emerald-600 hover:bg-emerald-700"
+            }`}
+          >
+            {loading ? "..." : "Send"}
+          </button>
         </div>
       </div>
     </div>

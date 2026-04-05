@@ -27,62 +27,56 @@ export default function ProfilePage() {
     }
   };
 
-  const handleSubmit = async () => {
-    if (loading) return;
+const handleSubmit = async () => {
+  if (loading) return;
 
-    if (
-      !form.firstName ||
-      !form.lastName ||
-      !form.dob ||
-      !form.role ||
-      !form.file
-    ) {
-      alert("Please fill all fields and upload your bank statement");
+  if (
+    !form.firstName ||
+    !form.lastName ||
+    !form.dob ||
+    !form.role ||
+    !form.file
+  ) {
+    alert("Please fill all fields and upload your bank statement");
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    const formData = new FormData();
+    formData.append("file", form.file);
+
+    const res = await fetch("http://127.0.0.1:8000/upload", {
+      method: "POST",
+      headers: {
+        "user-type": form.role, // 🔥 THIS FIXES EVERYTHING
+      },
+      body: formData,
+    });
+
+    const result = await res.json();
+
+    console.log("STATUS:", res.status);
+    console.log("RESULT:", result);
+
+    if (!res.ok) {
+      alert("Upload failed. Check console.");
       return;
     }
 
-    try {
-      setLoading(true);
+    sessionStorage.setItem("result", JSON.stringify(result));
+    sessionStorage.setItem("role", form.role);
 
-      const formData = new FormData();
-      formData.append("file", form.file);
+    router.push("/dashboard");
 
-      const res = await fetch("http://127.0.0.1:8000/upload", {
-        method: "POST",
-        headers: {
-          "user-type": form.role,
-        },
-        body: formData,
-      });
-
-      const result = await res.json();
-
-      console.log("STATUS:", res.status);
-      console.log("RESULT:", result);
-
-      if (!res.ok) {
-        alert("Upload failed. Check console.");
-        return;
-      }
-
-      // ✅ STORE DATA
-      sessionStorage.setItem("result", JSON.stringify(result));
-      sessionStorage.setItem("role", form.role);
-
-      // 🔥 IMPORTANT CHANGE HERE
-      if (form.role === "professional") {
-        router.push("/dashboard/professional");
-      } else {
-        router.push("/dashboard");
-      }
-
-    } catch (error) {
-      console.error(error);
-      alert("Network error. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  } catch (error) {
+    console.error(error);
+    alert("Network error. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#f7f5f0] to-[#dfe9e3] flex items-center justify-center px-6">
@@ -162,7 +156,6 @@ export default function ProfilePage() {
               <option value="">Select your profile</option>
               <option value="student">Student</option>
               <option value="professional">Professional</option>
-              <option value="retired">Retired</option>
             </select>
 
             {/* 📄 File Upload */}
@@ -182,7 +175,7 @@ export default function ProfilePage() {
               disabled={loading}
               className="w-full bg-green-700 text-white py-4 rounded-2xl text-lg font-semibold shadow-md hover:bg-green-800 transition disabled:opacity-50"
             >
-              {loading ? "Analyzing your finances..." : "Continue"}
+              {loading ? "Analyzing your finances..." : "Login using Auth0"}
             </motion.button>
           </div>
 
