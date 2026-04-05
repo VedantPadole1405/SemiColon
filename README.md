@@ -148,6 +148,68 @@ Most finance apps show data.
 **Personal CFO explains it, optimizes it, and acts on it.**
 
 ---
+## 🔐 Environment Setup
+
+To run this project locally, you will need to configure environment variables.
+
+### 📁 Frontend (`.env.local`)
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+---
+
+### 📁 Backend (`.env`)
+
+```env
+GOOGLE_API_KEY=your_gemini_api_key
+ELEVENLABS_API_KEY=your_elevenlabs_api_key
+SERP_API_KEY=your_serp_api_key
+```
+
+---
+
+## ⚠️ Important Note (For Evaluators)
+
+For security reasons, all API keys used during development and demo **will be expired after evaluation**.
+
+If you want to run the project:
+
+1. Create your own API keys:
+
+   * Google Gemini API
+   * ElevenLabs API
+   * (Optional) SERP API
+
+2. Replace the values inside:
+
+   * `.env` (backend)
+   * `.env.local` (frontend)
+
+---
+
+## 🔒 Security Best Practice
+
+* No API keys are stored in the repository
+* All sensitive data is handled via environment variables
+* This ensures safe and production-ready deployment
+
+---
+
+## 🚀 Quick Start
+
+```bash
+# Backend
+cd backend
+pip install -r requirements.txt
+uvicorn main:app --reload
+
+# Frontend
+cd ..
+npm install
+npm run dev
+```
 
 ## 👨‍💻 Team
 
