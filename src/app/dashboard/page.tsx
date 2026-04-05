@@ -13,7 +13,9 @@ import {
   CartesianGrid,
 } from "recharts";
 
-// ✅ CARD
+import AIResponseCard from "../../components/AIResponseCard";
+
+// ✅ CARD COMPONENT
 function Card({ title, value }: { title: string; value: number }) {
   return (
     <motion.div
@@ -47,6 +49,10 @@ export default function Dashboard() {
   const [data, setData] = useState<any>(null);
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
 
+  // 🔥 AI STATES
+  const [aiResponse, setAIResponse] = useState<any>(null);
+  const [aiLoading, setAILoading] = useState(false);
+
   useEffect(() => {
     const stored = sessionStorage.getItem("result");
     if (stored) setData(JSON.parse(stored));
@@ -55,12 +61,9 @@ export default function Dashboard() {
   if (!data) return <div className="p-10">Loading...</div>;
 
   const transactions = data.transactions || [];
-
-  // ✅ TYPE FIX
   const categories: Record<string, number> =
     data.summary?.category_breakdown || {};
 
-  // ✅ CATEGORY → TRANSACTIONS
   const categoryTransactions: Record<string, string[]> = {};
 
   transactions.forEach((txn: any) => {
@@ -79,7 +82,6 @@ export default function Dashboard() {
 
   const goalAmount = 1000;
 
-  // 📈 ZIG-ZAG GRAPH
   let runningBalance = 0;
 
   const chartData = transactions.map((txn: any) => {
@@ -96,6 +98,36 @@ export default function Dashboard() {
       ),
     };
   });
+
+  // 🤖 AI CALL
+  const askAI = async () => {
+    setAILoading(true);
+
+    try {
+      const res = await fetch("http://localhost:8000/ask-ai", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          question: "How can I achieve my goals faster?",
+          user_type: "student",
+          summary: data.summary,
+          subscriptions: data.subscriptions || [],
+          transactions: data.transactions || [],
+        }),
+      });
+
+      const result = await res.json();
+
+      // ✅ SAFE FIX
+      setAIResponse(result?.data || null);
+    } catch (err) {
+      console.error(err);
+    }
+
+    setAILoading(false);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#f0fdf4] to-[#ecfeff] flex flex-col items-center px-6">
@@ -127,17 +159,16 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* 🔥 MAIN WRAPPER FIX */}
-      <div className="w-full max-w-6xl overflow-visible">
+      <div className="w-full max-w-6xl">
 
-        {/* CARDS */}
+        {/* TOP CARDS */}
         <div className="grid grid-cols-3 gap-4 mb-6">
           <Card title="Income" value={income} />
           <Card title="Expenses" value={expenses} />
           <Card title="Balance" value={balance} />
         </div>
 
-        {/* PIE + GRAPH */}
+        {/* CHARTS */}
         <div className="grid grid-cols-2 gap-4 mb-6">
 
           {/* PIE */}
@@ -180,9 +211,9 @@ export default function Dashboard() {
           </GlassCard>
         </div>
 
-        {/* CATEGORY */}
+        {/* CATEGORY BREAKDOWN */}
         <GlassCard title="Category Breakdown 💳">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 relative overflow-visible">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 relative">
             {Object.entries(categories)
               .filter(([_, v]) => v > 0)
               .map(([key, value]) => (
@@ -198,29 +229,33 @@ export default function Dashboard() {
                     ${value.toFixed(2)}
                   </p>
 
-                  {/* 🔥 FIXED POPUP */}
                   {hoveredCategory === key &&
                     categoryTransactions[key]?.length > 0 && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="absolute left-1/2 -translate-x-1/2 -top-2 -translate-y-full 
-                        w-56 bg-white border border-gray-200 rounded-xl shadow-xl p-3 z-[9999]"
-                      >
-                        <p className="text-xs text-gray-500 mb-1">
-                          Transactions:
-                        </p>
-
+                      <div className="absolute left-1/2 -translate-x-1/2 -top-2 -translate-y-full w-56 bg-white border rounded-xl shadow-xl p-3 z-50">
                         {categoryTransactions[key].map((item, i) => (
-                          <p key={i} className="text-sm text-gray-800">
+                          <p key={i} className="text-sm">
                             • {item}
                           </p>
                         ))}
-                      </motion.div>
+                      </div>
                     )}
                 </motion.div>
               ))}
           </div>
+        </GlassCard>
+
+        {/* 🤖 AI SECTION */}
+        <GlassCard title="🤖 AI Financial Insights">
+          <button
+            onClick={askAI}
+            className="bg-emerald-600 text-white px-4 py-2 rounded-xl mb-4 hover:bg-emerald-700"
+          >
+            Get Smart Insights
+          </button>
+
+          {aiLoading && <p>Thinking...</p>}
+
+          {aiResponse && <AIResponseCard data={aiResponse} />}
         </GlassCard>
 
       </div>
