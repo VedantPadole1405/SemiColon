@@ -145,7 +145,7 @@ export default function Dashboard() {
           {[
             { label: "Dashboard", path: "/dashboard/professional" },
             { label: "Learn", path: "/learn" },
-            { label: "AI Assistant", path: "/assistant" },
+            { label: "Goal assistance", path: "/assistant" },
           ].map((item) => (
             <button
               key={item.label}

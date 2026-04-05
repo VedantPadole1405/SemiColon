@@ -116,7 +116,7 @@ export default function Dashboard() {
           {[
             { label: "Dashboard", path: "/dashboard/professional" },
             { label: "Learn", path: "/learn" }, // 🔥 FIXED
-            { label: "AI Assistant", path: "/assistant?type=professional" }, // 🔥 FIXED
+            { label: "Goal Assistant", path: "/assistant?type=professional" }, // 🔥 FIXED
           ].map((item) => (
             <button
               key={item.label}

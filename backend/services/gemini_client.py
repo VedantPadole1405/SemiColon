@@ -4,66 +4,100 @@ import os
 client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 
 
-# 🔥 SMART FALLBACK ENGINE
+# 🔥 SMART FALLBACK ENGINE (HARDCODED DEMO INTELLIGENCE)
 def fallback_response(prompt: str, user_type="student"):
     prompt_lower = prompt.lower()
 
-    # 🔥 POLICY / INSURANCE QUESTIONS (UPDATED ✅)
-    if any(word in prompt_lower for word in ["policy", "policies", "insurance"]):
+    # 🔥 SUBSCRIPTION OPTIMIZATION
+    if any(word in prompt_lower for word in ["subscription", "cancel", "subscriptions"]):
         return {
-            "insights": "Based on your financial profile, you should consider Life Insurance, Health Insurance, and Disability Insurance.",
+            "insights": "You currently have an active Spotify subscription which can be optimized.",
             "tips": [
-                "Life Insurance ensures your dependents are financially secure",
-                "Health Insurance protects you from unexpected medical expenses",
-                "Disability Insurance provides income if you are unable to work"
+                "Cancel Spotify if you are not using it frequently",
+                "Switch to YouTube Music which offers similar features at a lower price",
+                "Review all subscriptions monthly to avoid unnecessary charges"
             ],
-            "strategy": "Start with Life, Health, and Disability coverage to fully protect your financial stability.",
+            "strategy": "Optimizing subscriptions can reduce recurring expenses significantly.",
+            "monthly_savings": "$2–9.99/month",
             "recommendations": [
                 {
-                    "name": "Life Insurance",
-                    "reason": "Stable income detected",
+                    "name": "Cancel Spotify",
+                    "reason": "Replace with cheaper alternative",
                     "priority": "high"
                 },
                 {
-                    "name": "Health Insurance",
-                    "reason": "Essential financial protection",
-                    "priority": "high"
-                },
-                {
-                    "name": "Disability Insurance",
-                    "reason": "Income protection",
-                    "priority": "high"
+                    "name": "YouTube Music",
+                    "reason": "More affordable music streaming",
+                    "priority": "medium"
                 }
             ]
         }
 
-    # 🔥 SAVING / GOAL QUESTIONS
+    # 🔥 DEALS / DISCOUNTS ENGINE
+    elif any(word in prompt_lower for word in ["deal", "offers", "discount", "coupon"]):
+        return {
+            "insights": "You frequently shop at Walmart, which provides recurring discounts and deals.",
+            "tips": [
+                "Walmart runs major sales every Friday",
+                "Use cashback platforms like Rakuten for additional savings",
+                "Stack coupons + cashback to maximize discounts"
+            ],
+            "strategy": "Leverage recurring sales and cashback platforms to reduce spending.",
+            "monthly_savings": "$20–50/month",
+            "recommendations": [
+                {
+                    "name": "Rakuten Cashback",
+                    "reason": "Earn cashback on Walmart purchases",
+                    "priority": "high",
+                    "link": "https://www.rakuten.com/"
+                }
+            ]
+        }
+
+    # 🔥 INSURANCE / POLICY QUESTIONS
+    elif any(word in prompt_lower for word in ["policy", "policies", "insurance"]):
+        return {
+            "insights": "Based on your financial profile, you should consider Life, Health, and Disability Insurance.",
+            "tips": [
+                "Life Insurance ensures financial security for dependents",
+                "Health Insurance covers unexpected medical costs",
+                "Disability Insurance protects your income"
+            ],
+            "strategy": "Start with essential coverage to reduce long-term financial risk.",
+            "recommendations": [
+                {"name": "Life Insurance", "priority": "high"},
+                {"name": "Health Insurance", "priority": "high"},
+                {"name": "Disability Insurance", "priority": "high"}
+            ]
+        }
+
+    # 🔥 SAVINGS / GOALS
     elif "save" in prompt_lower or "goal" in prompt_lower:
         return {
-            "insights": "You are overspending on non-essential categories like shopping and subscriptions.",
+            "insights": "You are overspending on shopping and subscriptions.",
             "tips": [
-                "Reduce discretionary spending (Amazon/Walmart)",
+                "Reduce Amazon/Walmart spending",
                 "Cancel unused subscriptions",
-                "Set a fixed monthly savings target"
+                "Set a monthly savings goal"
             ],
-            "strategy": "Save consistently to accelerate goal achievement.",
+            "strategy": "Consistent savings will accelerate your financial goals.",
             "monthly_savings": "$150–200/month" if user_type == "student" else "$400–600/month"
         }
 
-    # 🔥 RISK QUESTIONS
+    # 🔥 RISK DETECTION
     elif "risk" in prompt_lower or "danger" in prompt_lower:
         return {
-            "insights": "You may be financially exposed due to lack of protection or savings buffer.",
+            "insights": "You may be financially exposed due to lack of safety buffers.",
             "tips": [
                 "Build an emergency fund",
-                "Consider health and life insurance",
-                "Avoid overspending on lifestyle expenses"
+                "Get basic insurance coverage",
+                "Reduce lifestyle overspending"
             ],
-            "strategy": "Reduce risk by balancing protection and savings.",
+            "strategy": "Balance savings and protection to reduce financial risk.",
             "monthly_savings": "$200–300/month"
         }
 
-    # 🔥 DEFAULT (STUDENT vs PROFESSIONAL)
+    # 🔥 DEFAULT RESPONSES
     if user_type == "student":
         return {
             "insights": "You are spending heavily on shopping and subscriptions.",
@@ -80,11 +114,11 @@ def fallback_response(prompt: str, user_type="student"):
         return {
             "insights": "A large portion of your income is going into lifestyle expenses.",
             "tips": [
-                "Optimize subscriptions and recurring payments",
+                "Optimize subscriptions",
                 "Track discretionary spending",
-                "Invest surplus instead of idle spending"
+                "Invest surplus money"
             ],
-            "strategy": "Reallocate 20% income towards savings/investments.",
+            "strategy": "Reallocate 20% of income towards savings.",
             "monthly_savings": "$400–600/month"
         }
 
@@ -112,7 +146,7 @@ User question: {prompt}
 """
         )
 
-        # 🔥 SAFE PARSE
+        # 🔥 SAFE PARSE (Gemini output is raw text)
         if response and hasattr(response, "text") and response.text:
             return {
                 "source": "gemini",
@@ -125,7 +159,7 @@ User question: {prompt}
                 }
             }
 
-        # 🔥 IF EMPTY RESPONSE
+        # 🔥 FALLBACK
         return {
             "source": "fallback",
             "data": fallback_response(prompt, user_type)
