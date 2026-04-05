@@ -1,16 +1,21 @@
-import re
+# ✅ Clean transaction description
+def clean_description(desc: str):
+    return desc.lower().strip()
 
 
-def clean_description(description: str) -> str:
-    if not description:
-        return ""
+# ✅ Remove unwanted transactions (refunds, transfers)
+def clean_transactions(transactions):
 
-    text = description.lower().strip()
+    ignore_keywords = ["refund", "transfer"]
 
-    # remove weird characters
-    text = re.sub(r"[^a-z0-9\s./&-]", "", text)
+    filtered = []
 
-    # normalize spaces
-    text = re.sub(r"\s+", " ", text)
+    for t in transactions:
+        desc = t["description"].lower()
 
-    return text
+        if any(k in desc for k in ignore_keywords):
+            continue
+
+        filtered.append(t)
+
+    return filtered

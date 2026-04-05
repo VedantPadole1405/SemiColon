@@ -12,18 +12,76 @@ export default function ProfilePage() {
     lastName: "",
     dob: "",
     role: "",
+    file: null as File | null,
   });
+
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e: any) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = () => {
-    console.log("User Profile:", form);
+  const handleFileChange = (e: any) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setForm({ ...form, file: e.target.files[0] });
+    }
+  };
 
-    // 👉 Later: send to backend / DB
+  const handleSubmit = async () => {
+    if (loading) return;
 
-    router.push("/onboarding/connect");
+    if (
+      !form.firstName ||
+      !form.lastName ||
+      !form.dob ||
+      !form.role ||
+      !form.file
+    ) {
+      alert("Please fill all fields and upload your bank statement");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const formData = new FormData();
+      formData.append("file", form.file);
+
+      const res = await fetch("http://127.0.0.1:8000/upload", {
+        method: "POST",
+        headers: {
+          "user-type": form.role,
+        },
+        body: formData,
+      });
+
+      const result = await res.json();
+
+      console.log("STATUS:", res.status);
+      console.log("RESULT:", result);
+
+      if (!res.ok) {
+        alert("Upload failed. Check console.");
+        return;
+      }
+
+      // ✅ STORE DATA
+      sessionStorage.setItem("result", JSON.stringify(result));
+      sessionStorage.setItem("role", form.role);
+
+      // 🔥 IMPORTANT CHANGE HERE
+      if (form.role === "professional") {
+        router.push("/dashboard/professional");
+      } else {
+        router.push("/dashboard");
+      }
+
+    } catch (error) {
+      console.error(error);
+      alert("Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -31,7 +89,7 @@ export default function ProfilePage() {
 
       <div className="relative w-full max-w-md h-screen">
 
-        {/* 🌊 Background waves */}
+        {/* 🌊 Background */}
         <motion.div
           className="absolute inset-0 rounded-[36px] blur-3xl opacity-30"
           animate={{
@@ -53,90 +111,79 @@ export default function ProfilePage() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7 }}
-          className="relative border border-white/40 rounded-[36px] p-8 bg-white/60 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.08)] flex flex-col justify-between h-full"
+          className="relative border border-white/40 rounded-[36px] p-8 bg-white/80 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.08)] flex flex-col justify-between h-full text-black"
         >
 
-          {/* Logo */}
-          <div className="mt-4 flex justify-center">
-            <div className="w-10 h-10 rounded-full bg-green-600 flex items-center justify-center text-white font-bold shadow-md">
-              $
-            </div>
-          </div>
-
-          {/* Title */}
-          <div className="text-center mt-4">
-            <h1 className="text-3xl font-serif text-green-900">
+          {/* Header */}
+          <div className="text-center">
+            <h1 className="text-3xl font-serif text-black">
               Your Profile
             </h1>
-            <p className="text-gray-600 text-sm mt-2">
+            <p className="text-gray-700 text-sm mt-2">
               Help us personalize your financial insights
             </p>
           </div>
 
-          {/* 🧾 FORM */}
+          {/* FORM */}
           <div className="mt-6 space-y-4">
 
             <input
-  type="text"
-  name="firstName"
-  placeholder="First Name"
-  value={form.firstName}
-  onChange={handleChange}
-  className="w-full p-3 rounded-xl border border-gray-300 
-             text-black placeholder-gray-500
-             focus:outline-none focus:ring-2 focus:ring-green-500"
-/>
+              type="text"
+              name="firstName"
+              placeholder="First Name"
+              value={form.firstName}
+              onChange={handleChange}
+              className="w-full p-3 rounded-xl border border-gray-300 text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
 
-<input
-  type="text"
-  name="lastName"
-  placeholder="Last Name"
-  value={form.lastName}
-  onChange={handleChange}
-  className="w-full p-3 rounded-xl border border-gray-300 
-             text-black placeholder-gray-500
-             focus:outline-none focus:ring-2 focus:ring-green-500"
-/>
+            <input
+              type="text"
+              name="lastName"
+              placeholder="Last Name"
+              value={form.lastName}
+              onChange={handleChange}
+              className="w-full p-3 rounded-xl border border-gray-300 text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
 
-    <input
-      type="date"
-      name="dob"
-      value={form.dob}
-      onChange={handleChange}
-      className="w-full p-3 rounded-xl border border-gray-300 
-                text-black
-                focus:outline-none focus:ring-2 focus:ring-green-500"
-    />
+            <input
+              type="date"
+              name="dob"
+              value={form.dob}
+              onChange={handleChange}
+              className="w-full p-3 rounded-xl border border-gray-300 text-black focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
 
-    <select
-      name="role"
-      value={form.role}
-      onChange={handleChange}
-      className="w-full p-3 rounded-xl border border-gray-300 
-                text-black
-                focus:outline-none focus:ring-2 focus:ring-green-500"
-    >
-      <option value="">Select your profile</option>
-      <option value="student">Student</option>
-      <option value="professional">Professional</option>
-      <option value="retired">Retired</option>
-    </select>
+            <select
+              name="role"
+              value={form.role}
+              onChange={handleChange}
+              className="w-full p-3 rounded-xl border border-gray-300 text-black focus:outline-none focus:ring-2 focus:ring-green-500"
+            >
+              <option value="">Select your profile</option>
+              <option value="student">Student</option>
+              <option value="professional">Professional</option>
+              <option value="retired">Retired</option>
+            </select>
+
+            {/* 📄 File Upload */}
+            <input
+              type="file"
+              onChange={handleFileChange}
+              className="w-full p-3 rounded-xl border border-gray-300 text-black bg-white cursor-pointer"
+            />
           </div>
 
-          {/* CTA */}
+          {/* BUTTON */}
           <div className="mt-6">
             <motion.button
               whileTap={{ scale: 0.96 }}
               whileHover={{ scale: 1.01 }}
               onClick={handleSubmit}
-              className="w-full bg-green-700 text-white py-4 rounded-2xl text-lg font-semibold shadow-md hover:bg-green-800 transition"
+              disabled={loading}
+              className="w-full bg-green-700 text-white py-4 rounded-2xl text-lg font-semibold shadow-md hover:bg-green-800 transition disabled:opacity-50"
             >
-              Continue
+              {loading ? "Analyzing your finances..." : "Continue"}
             </motion.button>
-
-            <p className="text-center text-xs text-gray-500 mt-3">
-              Secure · Private · Personalized
-            </p>
           </div>
 
         </motion.div>

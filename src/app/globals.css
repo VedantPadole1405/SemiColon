@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Ensure Tailwind layers load */
+@layer base, components, utilities;
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

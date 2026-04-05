@@ -1,27 +1,21 @@
-def generate_insights(transactions, summary):
-    category_data = summary["category_breakdown"]
+from services.gemini_service import ask_gemini
 
-    # 🔥 Pie chart data
-    labels = []
-    values = []
+def generate_insights(transactions, summary, user_type):
 
-    for category, amount in category_data.items():
-        labels.append(category)
-        values.append(round(amount, 2))
+    prompt = f"""
+    You are a financial assistant.
 
-    # 🔥 Extra insights (optional)
-    messages = []
+    User Type: {user_type}
 
-    if "subscriptions" in category_data:
-        messages.append("You are spending on subscriptions. Consider reviewing them.")
+    Summary:
+    {summary}
 
-    if "food" in category_data and category_data["food"] > 50:
-        messages.append("Frequent food spending detected. Cooking can save money.")
+    Analyze spending patterns and give:
+    - Key insights
+    - Spending problems
+    - Suggestions
 
-    return {
-        "chart": {
-            "labels": labels,
-            "values": values
-        },
-        "messages": messages
-    }
+    Keep it simple and actionable.
+    """
+
+    return ask_gemini(prompt)
